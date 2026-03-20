@@ -1,44 +1,63 @@
+// =======================
+// SETUP CANVAS
+// =======================
 const canvas = document.getElementById("vaporwaveBg");
 const ctx = canvas.getContext("2d");
 
+// Resize canvas to always fill the screen
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 
+  // Fill background
   ctx.fillStyle = "black";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 
-// Initial size
+// Run once at start
 resizeCanvas();
+
+// Update canvas on window resize
 window.addEventListener("resize", () => {
   resizeCanvas();
   drawRectangleCube();
 });
 
-// --- Front rectangle proportional to viewport ---
-const frontWidth = canvas.width * 0.6; // 40% of canvas width
-const frontHeight = canvas.height * 0.6; // 40% of canvas height
+// =======================
+// DEFINE FRONT RECTANGLE (CENTER FACE)
+// =======================
 
+// Size of center rectangle (60% of screen)
+const frontWidth = canvas.width * 0.6;
+const frontHeight = canvas.height * 0.6;
+
+// Position it in the center
 const startX = (canvas.width - frontWidth) / 2;
 const startY = (canvas.height - frontHeight) / 2;
 
-// --- Front rectangle points ---
+// Define 4 corners of the center rectangle
 const cubeA = { x: startX, y: startY }; // top-left
 const cubeB = { x: startX + frontWidth, y: startY }; // top-right
 const cubeC = { x: startX + frontWidth, y: startY + frontHeight }; // bottom-right
 const cubeD = { x: startX, y: startY + frontHeight }; // bottom-left
 
-// Canvas corners
+// =======================
+// CANVAS CORNERS (OUTER EDGES)
+// =======================
 const cornerA = { x: 0, y: 0 };
 const cornerB = { x: canvas.width, y: 0 };
 const cornerC = { x: canvas.width, y: canvas.height };
-const cornerD = { x: 0, y: canvas.height }; // same as cubeD
+const cornerD = { x: 0, y: canvas.height };
 
-// Animation Timeline
+// =======================
+// GLOBAL ANIMATION VALUE
+// =======================
+// animT goes from 0 → 1 repeatedly and controls interpolation
 let animT = 0;
 
-// Draw a face using A/B/C/D points
+// =======================
+// DRAW A SINGLE FACE (QUAD)
+// =======================
 const drawFace = ({ A, B, C, D }, color) => {
   ctx.beginPath();
   ctx.moveTo(A.x, A.y);
@@ -46,239 +65,123 @@ const drawFace = ({ A, B, C, D }, color) => {
   ctx.lineTo(C.x, C.y);
   ctx.lineTo(D.x, D.y);
   ctx.closePath();
+
   ctx.fillStyle = color;
   ctx.fill();
-  ctx.stroke();
+
+  ctx.stroke(); // outline
 };
 
-function drawMesh(face, stepsX, stepsY) {
+// =======================
+// DRAW GRID (MESH) ON A FACE
+// =======================
+function drawMesh(face) {
   const { A, B, C, D } = face;
 
-  // --- Vertical animated lines (inside each column cell) ---
+  const stepsX = 1;
+  const stepsY = 1;
+
+  // ---------- VERTICAL LINES ----------
   for (let i = 0; i < stepsX; i++) {
     const t1 = i / stepsX;
     const t2 = (i + 1) / stepsX;
 
-    // interpolate left edge (A→D)
+    // Interpolate along left edge (A → D)
     const leftStartX = A.x + (D.x - A.x) * t1;
     const leftStartY = A.y + (D.y - A.y) * t1;
     const leftEndX = A.x + (D.x - A.x) * t2;
     const leftEndY = A.y + (D.y - A.y) * t2;
 
-    // interpolate right edge (B→C)
+    // Interpolate along right edge (B → C)
     const rightStartX = B.x + (C.x - B.x) * t1;
     const rightStartY = B.y + (C.y - B.y) * t1;
     const rightEndX = B.x + (C.x - B.x) * t2;
     const rightEndY = B.y + (C.y - B.y) * t2;
 
-    // animate inside this slice
+    // Animate between those two positions using animT
     const currentLeftX = leftStartX + (leftEndX - leftStartX) * animT;
     const currentLeftY = leftStartY + (leftEndY - leftStartY) * animT;
 
     const currentRightX = rightStartX + (rightEndX - rightStartX) * animT;
     const currentRightY = rightStartY + (rightEndY - rightStartY) * animT;
 
+    // Draw the vertical line
     ctx.beginPath();
     ctx.moveTo(currentLeftX, currentLeftY);
     ctx.lineTo(currentRightX, currentRightY);
-    ctx.strokeStyle = "blue";
-    ctx.shadowBlur = 5;
-    ctx.shadowColor = "blue";
+    ctx.strokeStyle = "black";
     ctx.stroke();
   }
 
-  // --- Horizontal animated lines (inside each row cell) ---
+  // ---------- HORIZONTAL LINES ----------
   for (let i = 0; i < stepsY; i++) {
     const t1 = i / stepsY;
     const t2 = (i + 1) / stepsY;
 
-    // interpolate top edge (A→B)
+    // Interpolate along top edge (A → B)
     const topStartX = A.x + (B.x - A.x) * t1;
     const topStartY = A.y + (B.y - A.y) * t1;
     const topEndX = A.x + (B.x - A.x) * t2;
     const topEndY = A.y + (B.y - A.y) * t2;
 
-    // interpolate bottom edge (D→C)
+    // Interpolate along bottom edge (D → C)
     const bottomStartX = D.x + (C.x - D.x) * t1;
     const bottomStartY = D.y + (C.y - D.y) * t1;
     const bottomEndX = D.x + (C.x - D.x) * t2;
     const bottomEndY = D.y + (C.y - D.y) * t2;
 
-    // animate inside this slice
+    // Animate
     const currentTopX = topStartX + (topEndX - topStartX) * animT;
     const currentTopY = topStartY + (topEndY - topStartY) * animT;
 
     const currentBottomX = bottomStartX + (bottomEndX - bottomStartX) * animT;
     const currentBottomY = bottomStartY + (bottomEndY - bottomStartY) * animT;
 
+    // Draw horizontal line
     ctx.beginPath();
     ctx.moveTo(currentTopX, currentTopY);
     ctx.lineTo(currentBottomX, currentBottomY);
-    ctx.strokeStyle = "blue";
-    ctx.shadowBlur = 5;
-    ctx.shadowColor = "blue";
+    ctx.strokeStyle = "black";
     ctx.stroke();
   }
 }
 
+// =======================
+// DRAW ALL FACES OF "CUBE"
+// =======================
 function drawRectangleCube() {
-  // --- Draw faces using drawFace ---
-  // center face
-  drawFace({ A: cubeA, B: cubeB, C: cubeC, D: cubeD }, "black");
-  // top face
-  drawFace({ A: cornerA, B: cornerB, C: cubeB, D: cubeA }, "black");
-  // bottom face
-  drawFace({ A: cubeD, B: cubeC, C: cornerC, D: cornerD }, "black");
-  // left face
-  drawFace({ A: cornerA, B: cubeA, C: cubeD, D: cornerD }, "black");
-  // right face
-  drawFace({ A: cubeB, B: cornerB, C: cornerC, D: cubeC }, "black");
+  // Draw faces
+  drawFace({ A: cubeA, B: cubeB, C: cubeC, D: cubeD }, "lightblue"); // center
+  drawFace({ A: cornerA, B: cornerB, C: cubeB, D: cubeA }, "lightgreen"); // top
+  drawFace({ A: cubeD, B: cubeC, C: cornerC, D: cornerD }, "lightyellow"); // bottom
+  drawFace({ A: cornerA, B: cubeA, C: cubeD, D: cornerD }, "lavender"); // left
+  drawFace({ A: cubeB, B: cornerB, C: cornerC, D: cubeC }, "pink"); // right
 
-  // --- Draw mesh using drawMesh ---
-  // center mesh
+  // Draw mesh (grid lines)
   drawMesh({ A: cubeA, B: cubeB, C: cubeC, D: cubeD }, 10, 10);
-  // top mesh
   drawMesh({ A: cornerA, B: cornerB, C: cubeB, D: cubeA }, 10, 10);
-  // bottom mesh
   drawMesh({ A: cubeD, B: cubeC, C: cornerC, D: cornerD }, 10, 10);
-  // left mesh
   drawMesh({ A: cornerA, B: cubeA, C: cubeD, D: cornerD }, 10, 10);
-  // right mesh
   drawMesh({ A: cubeB, B: cornerB, C: cornerC, D: cubeC }, 10, 10);
 }
 
-class AnimatedLine {
-  constructor(
-    direction,
-    motion,
-    start,
-    end,
-    fixedStart,
-    fixedEnd,
-    speed,
-    delay = 0,
-  ) {
-    this.direction = direction; // "vertical" or "horizontal"
-    this.motion = motion; // "right", "left", "up", "down"
-    this.start = start;
-    this.end = end;
-    this.fixedStart = fixedStart;
-    this.fixedEnd = fixedEnd;
-    this.t = 0; // animation progress
-    this.speed = speed || 0.0025;
-
-    this.delay = delay; // how long to wait
-    this.elapsed = 0; //how much time has passed
-  }
-
-  draw() {
-    // Wait until delay is over
-    if (this.elapsed < this.delay) {
-      this.elapsed++;
-      return;
-    }
-
-    let current;
-    if (this.motion === "right" || this.motion === "down") {
-      current = this.start + (this.end - this.start) * this.t;
-    } else {
-      current = this.start - (this.end - this.start) * this.t;
-    }
-
-    ctx.beginPath();
-    if (this.direction === "vertical") {
-      ctx.moveTo(current, this.fixedStart);
-      ctx.lineTo(current, this.fixedEnd);
-    } else {
-      ctx.moveTo(this.fixedStart, current);
-      ctx.lineTo(this.fixedEnd, current);
-    }
-    ctx.strokeStyle = "blue";
-    ctx.stroke();
-
-    this.t += this.speed;
-    if (this.t > 1) this.t = 0; // loop infinitely
-  }
-}
-
-const meshLines = [];
-let count = 0;
-const delayStep = 20;
-const stepsX = 10;
-const stepsY = 10;
-
-const centerX = (cubeA.x + cubeB.x + cubeC.x + cubeD.x) / 4;
-const centerY = (cubeA.y + cubeB.y + cubeC.y + cubeD.y) / 4;
-
-// vertical lines
-for (let i = 1; i < stepsX; i++) {
-  const tPos = i / stepsX;
-  meshLines.push(
-    new AnimatedLine(
-      "vertical",
-      "right",
-      centerX,
-      cubeB.x,
-      cubeA.y,
-      cubeD.y,
-      0.01,
-      count * delayStep,
-    ),
-  );
-
-  meshLines.push(
-    new AnimatedLine(
-      "vertical",
-      "left",
-      centerX,
-      cubeB.x,
-      cubeA.y,
-      cubeD.y,
-      0.01,
-      count * delayStep,
-    ),
-  );
-  count++;
-}
-
-// // horizontal lines
-// for (let i = 1; i < stepsY; i++) {
-//   meshLines.push(
-//     new AnimatedLine(
-//       "horizontal",
-//       "down",
-//       centerY,
-//       cubeD.y,
-//       cubeA.x,
-//       cubeB.x,
-//       .5,
-//       count * delayStep,
-//     ),
-//   );
-//   meshLines.push(
-//     new AnimatedLine(
-//       "horizontal",
-//       "up",
-//       centerY,
-//       cubeD.y,
-//       cubeA.x,
-//       cubeB.x,
-//       0.05,
-//       count * delayStep,
-//     ),
-//   );
-//   count++;
-// }
-
+// =======================
+// ANIMATION LOOP
+// =======================
 function animateMesh() {
+  // Clear canvas every frame
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Redraw cube + mesh
   drawRectangleCube();
 
-  // advance animation
+  // Update animation progress (0 → 1 loop)
   animT += 0.01;
   if (animT > 1) animT = 0;
 
+  // Run next frame
   requestAnimationFrame(animateMesh);
 }
 
+// Start animation
 animateMesh();
