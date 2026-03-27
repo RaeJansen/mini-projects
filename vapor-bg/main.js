@@ -114,12 +114,55 @@ const drawMesh = (faceArray) => {
   const bottomLeft = faceArray[3];
 
   const stepsX = 5;
+  const stepsY = 5;
 
   const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
   const maxY = Math.max(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
+  const minX = Math.min(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
+  const maxX = Math.max(topLeft.x, topRight.x, bottomRight.x, bottomLeft.x);
 
   const moveUp = minY < centreY; // face is above center → move upward
+  const moveBack = minX < centreX;
 
+  // ---------- VERTICAL LINES ----------
+  for (let i = 0; i < stepsY; i++) {
+    const t1 = i / stepsY;
+    const t2 = (i + 1) / stepsY;
+
+    // interpolate along top edge
+    let startTopX = topLeft.x + (topRight.x - topLeft.x) * t1;
+    let startTopY = topLeft.y + (topRight.y - topLeft.y) * t1;
+    let endTopX = topLeft.x + (topRight.x - topLeft.x) * t2;
+    let endTopY = topLeft.y + (topRight.y - topLeft.y) * t2;
+
+    // interpolate along bottom edge
+    let startBottomX = bottomLeft.x + (bottomRight.x - bottomLeft.x) * t1;
+    let startBottomY = bottomLeft.y + (bottomRight.y - bottomLeft.y) * t1;
+    let endBottomX = bottomLeft.x + (bottomRight.x - bottomLeft.x) * t2;
+    let endBottomY = bottomLeft.y + (bottomRight.y - bottomLeft.y) * t2;
+
+    // use animT normally for faces below center,
+    // reverse animT for faces above center to move upward
+    const effectiveT = moveBack ? 1 - animT : animT;
+
+    let startAnimX = startTopX + (endTopX - startTopX) * effectiveT;
+    let startAnimY = startTopY + (endTopY - startTopY) * effectiveT;
+    let endAnimX = startBottomX + (endBottomX - startBottomX) * effectiveT;
+    let endAnimY = startBottomY + (endBottomY - startBottomY) * effectiveT;
+
+    // clamp to face
+    startAnimX = Math.max(minX, Math.min(maxX, startAnimX));
+    endAnimX = Math.max(minX, Math.min(maxX, endAnimX));
+
+    // draw horizontal line
+    ctx.beginPath();
+    ctx.moveTo(startAnimX, startAnimY);
+    ctx.lineTo(endAnimX, endAnimY);
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+  }
+
+  // ---------- HORIZONTAL LINES ----------
   for (let i = 0; i < stepsX; i++) {
     const t1 = i / stepsX;
     const t2 = (i + 1) / stepsX;
