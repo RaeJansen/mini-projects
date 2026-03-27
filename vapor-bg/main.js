@@ -73,26 +73,22 @@ const Points = {
 // Object.values(Points).forEach((point) => {
 //   const { x, y } = point;
 
-//   ctx.beginPath();
-//   ctx.arc(x, y, 5, 0, Math.PI * 2);
-//   ctx.fillStyle = "limegreen";
-//   ctx.fill();
 // });
 
 // define all faces
 const Faces = {
-  // face1: [Points.A, Points.B, Points.E, Points.D],
-  // face2: [Points.B, Points.C, Points.F, Points.E],
-  // face3: [Points.A, Points.D, Points.H, Points.G],
+  face1: [Points.A, Points.B, Points.E, Points.D],
+  face2: [Points.B, Points.C, Points.F, Points.E],
+  face3: [Points.A, Points.D, Points.H, Points.G],
   face4: [Points.D, Points.E, Points.I, Points.H],
-  // face5: [Points.E, Points.F, Points.J, Points.I],
-  // face6: [Points.F, Points.C, Points.K, Points.J],
-  // face7: [Points.G, Points.H, Points.L, Points.O],
+  face5: [Points.E, Points.F, Points.J, Points.I],
+  face6: [Points.F, Points.C, Points.K, Points.J],
+  face7: [Points.G, Points.H, Points.L, Points.O],
   face8: [Points.H, Points.I, Points.M, Points.L],
-  // face9: [Points.I, Points.J, Points.N, Points.M],
-  // face10: [Points.J, Points.K, Points.Q, Points.N],
-  // face11: [Points.L, Points.M, Points.P, Points.O],
-  // face12: [Points.M, Points.N, Points.Q, Points.P],
+  face9: [Points.I, Points.J, Points.N, Points.M],
+  face10: [Points.J, Points.K, Points.Q, Points.N],
+  face11: [Points.L, Points.M, Points.P, Points.O],
+  face12: [Points.M, Points.N, Points.Q, Points.P],
 };
 
 // draw faces function:
@@ -117,67 +113,43 @@ const drawMesh = (faceArray) => {
   const bottomRight = faceArray[2];
   const bottomLeft = faceArray[3];
 
-  // define number of mesh lines
   const stepsX = 5;
-  const stepsY = 5;
 
-  // ---------- HORIZONTAL LINES ----------
+  const minY = Math.min(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
+  const maxY = Math.max(topLeft.y, topRight.y, bottomRight.y, bottomLeft.y);
+
+  const moveUp = minY < centreY; // face is above center → move upward
+
   for (let i = 0; i < stepsX; i++) {
-    //set animation timeline positions
     const t1 = i / stepsX;
     const t2 = (i + 1) / stepsX;
 
-    // interpolate along desired edges
-    // left
-    let startLeftX;
-    let startLeftY;
-    let endLeftX;
-    let endLeftY;
-    // right
-    let startRightX;
-    let startRightY;
-    let endRightX;
-    let endRightY;
+    // interpolate along left edge
+    let startLeftX = topLeft.x + (bottomLeft.x - topLeft.x) * t1;
+    let startLeftY = topLeft.y + (bottomLeft.y - topLeft.y) * t1;
+    let endLeftX = topLeft.x + (bottomLeft.x - topLeft.x) * t2;
+    let endLeftY = topLeft.y + (bottomLeft.y - topLeft.y) * t2;
 
-    // if the bottom of the face is at an equal or higher point to the centre y point, interpolate top to bottom, else interpolate from bottom to top
-    if (bottomRight.y >= centreY) {
-      // left top -> left bottom
-      startLeftX = topLeft.x + (bottomLeft.x - topLeft.x) * t1;
-      startLeftY = topLeft.y + (bottomLeft.y - topLeft.y) * t1;
-      endLeftX = bottomLeft.x + (topLeft.x - bottomLeft.x) * t2;
-      endLeftY = bottomLeft.y + (topLeft.y - bottomLeft.y) * t2;
-      //right top -> right bottom
-      startRightX = topRight.x + (bottomRight.x - topRight.x) * t1;
-      startRightY = topRight.y + (bottomRight.y - topRight.y) * t1;
-      endRightX = bottomRight.x + (topRight.x - bottomRight.x) * t2;
-      endRightY = bottomRight.y + (topRight.y - bottomRight.y) * t2;
-    } else {
-      // left bottom -> left top
-      startLeftX = bottomLeft.x + (topLeft.x - bottomLeft.x) * t1;
-      startLeftY = bottomLeft.y + (topLeft.y - bottomLeft.y) * t1;
-      endLeftX = topLeft.x + (bottomLeft.x - topLeft.x) * t2;
-      endLeftY = topLeft.y + (bottomLeft.y - topLeft.y) * t2;
-      //right bottom -> right top
-      startRightX = bottomRight.x + (topRight.x - bottomRight.x) * t1;
-      startRightY = bottomRight.y + (topRight.y - bottomRight.y) * t1;
-      endRightX = topRight.x + (bottomRight.x - topRight.x) * t2;
-      endRightY = topRight.y + (bottomRight.y - topRight.y) * t2;
-    }
+    // interpolate along right edge
+    let startRightX = topRight.x + (bottomRight.x - topRight.x) * t1;
+    let startRightY = topRight.y + (bottomRight.y - topRight.y) * t1;
+    let endRightX = topRight.x + (bottomRight.x - topRight.x) * t2;
+    let endRightY = topRight.y + (bottomRight.y - topRight.y) * t2;
 
-    // show points (debugging)
+    // use animT normally for faces below center,
+    // reverse animT for faces above center to move upward
+    const effectiveT = moveUp ? 1 - animT : animT;
 
-    ctx.beginPath();
-    ctx.arc(startLeftX, startLeftY, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "limegreen";
-    ctx.fill();
+    let startAnimX = startLeftX + (endLeftX - startLeftX) * effectiveT;
+    let startAnimY = startLeftY + (endLeftY - startLeftY) * effectiveT;
+    let endAnimX = startRightX + (endRightX - startRightX) * effectiveT;
+    let endAnimY = startRightY + (endRightY - startRightY) * effectiveT;
 
-    // animate between positions using animT
-    let startAnimX = startLeftX + (endLeftX - startLeftX) * animT;
-    let endAnimX = startRightX + (endRightX - startRightX) * animT;
-    let startAnimY = startLeftY + (endLeftY - startLeftY) * animT;
-    let endAnimY = startRightY + (endRightY - startRightY) * animT;
+    // clamp to face
+    startAnimY = Math.max(minY, Math.min(maxY, startAnimY));
+    endAnimY = Math.max(minY, Math.min(maxY, endAnimY));
 
-    //draw horizontal line
+    // draw horizontal line
     ctx.beginPath();
     ctx.moveTo(startAnimX, startAnimY);
     ctx.lineTo(endAnimX, endAnimY);
@@ -209,7 +181,7 @@ function animateMesh() {
   drawRectangleCube();
 
   // Update animation progress (0 → 1 loop)
-  animT += 0.001;
+  animT += 0.01;
   if (animT > 1) animT = 0;
 
   // Run next frame
